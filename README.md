@@ -34,27 +34,27 @@ Prelude Data.List> length . takeWhile (> -1) . reverse $ foldl' (\acc@(y:ys) x -
 
 ### Part 1
 
-> Find the total amount of material needed given a list of dimensions, where the formula is `2*l*w + 2*w*h + 2*h*l` plus the area of the smallest two sides
+> Find the total amount of paper needed to cover a box with a given list of dimensions, where the formula is `2*l*w + 2*w*h + 2*h*l` plus the area of the smallest two sides
 
 ``` hs 
 import Data.List
 
 input = "4x23x21 22x29x19 11x4x11 8x10x5 24x18x16 11x25x22"
 
-data Box = Box { l :: Int , w :: Int , h :: Int }
+data Box = Box { s1 :: Int , s2 :: Int , s3 :: Int }
 
 sortBox :: Box -> Box
 sortBox box = Box (sorted!!0) (sorted!!1) (sorted!!2)
-    where sorted = sort [l box, w box, h box]
+    where sorted = sort [s1 box, s2 box, s3 box]
 
 splitBy :: (Eq t1, Foldable t) => t1 -> t t1 -> [[t1]]
 splitBy delimiter = foldr (\c l@(x:xs) -> if c == delimiter then []:l else (c:x):xs) [[]]
 
 area :: Box -> Int
-area box = 2 * l box * w box + 2 * w box * h box + 2 * h box * l box
+area box = 2 * s1 box * s2 box + 2 * s2 box * s3 box + 2 * s3 box * s1 box
 
 extra :: Box -> Int
-extra box = l sBox * w sBox
+extra box = s1 sBox * s2 sBox
      where sBox = sortBox box
 
 buildBoxes :: [Box]
@@ -77,7 +77,7 @@ The dimensions must be sorted, so the `extra` function can be modified to suit t
 
 ``` hs
 ribbon :: Box -> Int
-ribbon box = 2 * l sBox + 2 * w sBox + l sBox * w sBox * h sBox
+ribbon box = 2 * s1 sBox + 2 * s2 sBox + s1 sBox * s2 sBox * s3 sBox
     where sBox = sortBox box
 ```
 
@@ -87,3 +87,56 @@ Like part 1, use a map to compute the answer:
 Prelude> sum $ map ribbon buildBoxes
 28222
 ```
+
+## Day 3
+
+### Part 1
+
+> Find the number of unique locations visited on a 2D grid, given a list of directions. The directions are represented by the characters "^>v<"
+
+The bulk of this problem is a graph traversal that can be solved by folding the directions into a list of coordinates.
+``` hs
+import Data.List
+
+input = ">^^v^<>v<<<v<v^>>v^^^<v<>^^><^<<^vv>>>^<<^>><vv<<v^<^^><>>><>v<><>"
+
+trav inp = foldl p [(0,0)] inp
+    where p acc x | x == '>' = (first acc + 1, second acc)     : acc
+                  | x == '<' = (first acc - 1, second acc)     : acc
+                  | x == '^' = (first acc,     second acc + 1) : acc
+                  | x == 'v' = (first acc,     second acc - 1) : acc
+          first acc  = fst (head acc)
+          second acc = snd (head acc)
+```
+
+The solution is the length of the nub'd resulting list.
+
+``` hs
+Prelude> length . nub $ trav input
+32
+```
+
+### Part 2
+
+> Directions with odd and even indexes are traversed by different individuals. Find the total number of unique locations visited.
+
+The traversal function does not need to be modified for this problem, but the input string needs to be split for the two traversals. 
+
+``` hs
+split1 []       = []
+split1 (x:y:ys) = x : split1 ys
+
+split2 []       = []
+split2 (x:y:ys) = y : split2 ys
+```
+
+The solution is computed the same as part1, but with the two lists concatenated.
+
+``` hs
+Prelude> length . nub $ (trav $ split1 input) ++ (trav $ split2 input)
+37
+```
+
+
+
+
